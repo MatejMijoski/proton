@@ -1,0 +1,43 @@
+version: '3.9'
+
+services:
+  backend:
+    build: .
+    volumes:
+      - ./proton-backend:/app/proton-backend
+    environment:
+      - DEBUG=1
+      - DATABASE_URL=psql://proton_user:proton_pw@db:5432/proton
+      - DJANGO_SECRET_KEY=django-insecure-^0p2gt2(&%^bxt3pi=4h)l@*86c4c-*hintxh(qfrg6iy#-(fo
+    command: >
+      sh -c "
+      python /app/proton-backend/manage.py migrate &&
+      python /app/proton-backend/manage.py import_orders --file-path /app/proton-backend/files/homework_order_lines.csv &&
+      python /app/proton-backend/manage.py runserver 0.0.0.0:8000
+      "
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  frontend:
+    build: .
+    volumes:
+      - ./proton-frontend:/app/proton-frontend
+    command: sh -c "cd /app/proton-frontend && npm start"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  db:
+    image: postgres:latest
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=proton
+      - POSTGRES_USER=proton_user
+      - POSTGRES_PASSWORD=proton_pw
+
+volumes:
+  postgres_data:
